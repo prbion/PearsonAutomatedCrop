@@ -5,7 +5,6 @@ from PIL import Image
 
 
 class PDFManager:
- class PDFManager:
     def __init__(self):
         self.file_path = ""
         self.doc = None
@@ -21,5 +20,6 @@ class PDFManager:
         return self.doc[page_number]
 
     def close_pdf(self):
-        if self.doc == True:
+        if self.doc:
             self.doc.close()
+            self.doc = None
