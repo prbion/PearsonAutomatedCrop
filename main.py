@@ -1,39 +1,32 @@
 # main.py
 import pymupdf
+import string 
 import pytesseract 
 from PIL import Image
 # Below are the imports for the classes 
 from PDFManager import PDFManager
 from TaskExtractor import TaskExtractor
 from ImageSnipper import ImageSnipper
-
+from Menu import Menu 
+from TaskPipeline import TaskPipeline
 
 def main():
+    # 1. Setup
+    menu = Menu()
     
+    # 2. Initialize tools
     pdf_manager = PDFManager()
     extractor = TaskExtractor()
     snipper = ImageSnipper()
-
-    pdf_path = r"C:\Dev\src\8fm0-21-que-20240518.pdf"  # put the path to your PDF file here
-    pdf_manager.open_file(pdf_path)
-
-
-    num_pages = pdf_manager.get_page_count()
     
-    for i in range(num_pages):
-        page = pdf_manager.get_current_page(i)
-        coords = extractor.find_coordinates(page)
-        
-        # Hol dir jetzt alle einzelnen Bereiche
-        sub_task_crops = extractor.calculate_crop_areas(coords, page)
-        
-        for task_index, crop_rect in enumerate(sub_task_crops):
-            output_name = f"page_{i+1}_task_{task_index+1}.png"
-            snipper.crop_and_save(page, crop_rect, output_name)
-            
+    # 3. Create the coordinator (The Processor)
+    processor = TaskPipeline(pdf_manager, extractor, snipper)
 
-
-    pdf_manager.close_pdf()
+    # 4. Execute
+    pdf_path = r"C:\Dev\src\9FM0_02_que_20190607.pdf"
+    
+    # CHANGE: Pass the whole 'menu' object, not just the prefix string
+    processor.run(pdf_path, menu)
 
 if __name__ == "__main__":
     main()
