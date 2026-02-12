@@ -177,5 +177,5 @@ Contributions, issues, and feature requests are welcome. Feel free to check issu
 
 ---
 
-**Author**: [Your Name]  
+**Author**: Arbion Memaj  
 **Last Updated**: February 2026
