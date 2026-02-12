@@ -1,30 +1,181 @@
-# PearsonAutomatedCrop
-A tool that automates the manual process of cropping the papers to make the process more efficient.
+# PDF Question Extractor
 
-This tool was made for UniDoodle, to speed up their snipping process of manually cropping papers to get questions from them. 
+A Python tool for automatically extracting and cropping individual questions from examination papers and educational PDFs. The tool intelligently identifies question boundaries, splits multi-part questions into sub-tasks, and saves them as organized, labeled image files.
 
-1. What can it do?
-It was made to automatically crop out the Tasks of Pearson papers. It crops out The tasks and the subtasks separately exactly how we do it here.
-The Tasks get cropped out and get saved in the same folder where the program is saved in.
-It has a about 90% - 95% accuracy, and it only struggles with subsubtasks, (e.g. Task 3. subtask (a) subsubtask (ii)) which it can not reliably crop.
+## Features
 
-2. How it's built.
-It was programmed object oriented. There is a total of 4 classes:
+- **Automated Question Detection**: Identifies questions using pattern matching for question numbers (e.g., "1.", "2.") and mark allocations (e.g., "(3)", "(5)")
+- **Smart Cropping**: Automatically calculates optimal crop boundaries for each question part
+- **Organized Output**: Generates structured filenames and folders based on publisher, level, subject, and year
+- **High-Resolution Output**: Produces crisp images with 2x resolution scaling for better clarity
+- **Batch Processing**: Processes entire PDF documents in a single run
+- **Flexible Naming**: Supports alphabetical labeling for multi-part questions (a, b, c, etc.)
 
-       1. "main.py" Acts as the central controller that manages user input and orchestrates the workflow between all other modules. It coordinates the entire process from opening the PDF to saving the final images.
-       
-       2. "PDFManager.py" Manages the document operations, such as opening the file and navigating between pages. It ensures the PDF is properly loaded and safely closed after processing.
-       
-       3. "TaskExtractor.py" This class acts as the "brain" of the system by scanning page content for specific score patterns (like "(3)") to determine where tasks begin and end. It then translates these visual markers into mathematical coordinates for the cropping process.
-         
-       4. "ImageSnipper" Handles the actual image rendering and file management. It converts the identified PDF parts into high resolution PNGs.
+## Prerequisites
 
-4. Installation and Dependencies
-    
-    1. You need python 
+- Python 3.7 or higher
+- Tesseract OCR (optional, included in imports but not actively used in current implementation)
 
-    2. PyMuPDF (pip install PyMuPDF)
+## Installation
 
-    3. Put PDF in the project folder
+1. **Clone or download this repository**
 
-    4. Run the code (The .png pictures show up in the folder the project is in)
+2. **Install required Python packages:**
+
+```bash
+pip install pymupdf pillow pytesseract
+```
+
+3. **Install Tesseract OCR** (optional):
+   - **Windows**: Download from [GitHub](https://github.com/UB-Mannheim/tesseract/wiki)
+   - **macOS**: `brew install tesseract`
+   - **Linux**: `sudo apt-get install tesseract-ocr`
+
+## Project Structure
+
+```
+pdf-question-extractor/
+│
+├── main.py              # Entry point and orchestration
+├── Menu.py              # User input handler for metadata
+├── PDFManager.py        # PDF file operations
+├── TaskExtractor.py     # Question detection and boundary calculation
+├── ImageSnipper.py      # Image cropping and saving
+├── TaskPipeline.py      # Processing pipeline coordinator
+└── README.md            # This file
+```
+
+## Usage
+
+### Basic Usage
+
+1. **Run the program:**
+
+```bash
+python main.py
+```
+
+2. **Provide the requested information:**
+   - Publisher (e.g., "Edexcel", "AQA", "OCR")
+   - Level (e.g., "GCSE", "AS", "A2")
+   - Subject (e.g., "Maths", "Physics", "Chemistry")
+   - Year (e.g., "2019", "2020")
+
+3. **Configure the PDF path** in `main.py`:
+
+```python
+pdf_path = r"C:\path\to\your\exam_paper.pdf"
+```
+
+4. **Output files** will be saved in a folder named: `{Publisher}_{Subject}_{Year}/`
+
+### Example
+
+**Input:**
+```
+What Publisher? Edexcel
+What Level? GCSE
+What Subject? Maths
+What Year? 2019
+```
+
+**Output Structure:**
+```
+Edexcel_Maths_2019/
+├── Edexcel_GCSE_Maths_2019_1_a.png
+├── Edexcel_GCSE_Maths_2019_1_b.png
+├── Edexcel_GCSE_Maths_2019_2_a.png
+└── ...
+```
+
+## How It Works
+
+1. **Menu Input**: Collects metadata about the exam paper
+2. **PDF Loading**: Opens and prepares the PDF for processing
+3. **Question Detection**: 
+   - Scans each page for question numbers (pattern: `\d+\.`)
+   - Identifies mark allocations (pattern: `\(\d+\)`)
+4. **Boundary Calculation**: Determines crop areas between mark indicators
+5. **Image Extraction**: Crops and saves each question part as a high-resolution PNG
+6. **Organized Storage**: Files are saved with descriptive names in a structured folder
+
+## Configuration
+
+### Modifying Detection Patterns
+
+Edit `TaskExtractor.py` to adjust pattern matching:
+
+```python
+self.mark_pattern = r"\(\d+\)"      # Matches marks like (3), (5)
+self.header_pattern = r"(\d+\.)"     # Matches question numbers like 1., 2.
+```
+
+### Adjusting Crop Boundaries
+
+Modify crop parameters in `TaskExtractor.py`:
+
+```python
+right_side = page.rect.width * 0.85  # Crop to 85% of page width
+bottom = y_coord + 10                # Buffer below mark indicator
+```
+
+### Resolution Settings
+
+Change the scaling matrix in `ImageSnipper.py`:
+
+```python
+matrix=pymupdf.Matrix(2, 2)  # 2x scaling (higher = better quality, larger files)
+```
+
+## Class Overview
+
+### Menu
+Handles user input and generates consistent file and folder naming conventions.
+
+### PDFManager
+Manages PDF document lifecycle: opening, page navigation, and closing.
+
+### TaskExtractor
+Identifies questions and calculates optimal crop boundaries using regex pattern matching.
+
+### ImageSnipper
+Performs the actual image cropping and file saving operations.
+
+### TaskPipeline
+Orchestrates the entire extraction process, coordinating all components.
+
+## Limitations
+
+- Assumes consistent formatting within PDF (question numbers followed by mark allocations)
+- Works best with single-column layouts
+- Minimum crop height of 40 pixels to filter out false positives
+- Alphabetical labels cycle after 'z' (for questions with 26+ parts)
+
+## Troubleshooting
+
+**No images are generated:**
+- Verify the PDF path is correct
+- Check that questions follow the expected numbering format
+- Ensure mark allocations are in the format "(N)"
+
+**Questions are cropped incorrectly:**
+- Adjust the `right_side` percentage in `TaskExtractor.py`
+- Modify the buffer values in `calculate_crop_areas()`
+
+**File permission errors:**
+- Ensure write permissions for the output directory
+- Close any open image files before re-running
+
+## Future Enhancements
+- GUI interface for easier configuration
+- Batch processing of multiple PDF files
+
+
+## Contributing
+
+Contributions, issues, and feature requests are welcome. Feel free to check issues page if you want to contribute.
+
+---
+
+**Author**: [Your Name]  
+**Last Updated**: February 2026
