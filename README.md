@@ -166,7 +166,7 @@ Orchestrates the entire extraction process, coordinating all components.
 - Ensure write permissions for the output directory
 - Close any open image files before re-running
 
-## Future Enhancements
+## Future Enhancements (probably wont get it done in time)
 - GUI interface for easier configuration
 - Batch processing of multiple PDF files
 
