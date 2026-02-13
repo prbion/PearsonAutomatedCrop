@@ -171,10 +171,6 @@ Orchestrates the entire extraction process, coordinating all components.
 - Batch processing of multiple PDF files
 
 
-## Contributing
-
-Contributions, issues, and feature requests are welcome. Feel free to check issues page if you want to contribute.
-
 ---
 
 **Author**: Arbion Memaj  
