@@ -8,8 +8,13 @@ class TaskExtractor:
     def __init__(self):
         self.mark_pattern = r"\(\d+\)" # (4), (5) etc. for marking subtasks
         self.header_pattern = r"(\d+\.)"
-        self.roman_pattern = r"\(([iv]+)\)" 
-        self.letter_pattern = r"\(([a-z])\)"  # Pattern for letter subtasks
+        self.roman_pattern = r"\(([ivx]+)\)"       # (i), (ii), (iii), (iv), (v), (vi)...
+        self.letter_pattern = r"\(([a-z])\)"        # Single lowercase letter in parens
+
+        # Characters that are ONLY roman numerals (not letter subtasks).
+        # We use ivx because exam roman sub-questions go i, ii, iii, iv, v, vi...
+        # Importantly we do NOT include l, c, d, m because (d) is a valid letter subtask.
+        self._roman_only_chars = set('ivx')
 
     def find_current_question_name(self, page):
         words = page.get_text("words")
@@ -32,8 +37,8 @@ class TaskExtractor:
         right_side = (page.rect.width * 0.85) + 5 
 
         for y_coord in y_coordinates:
-            top = start_y
-            bottom = y_coord + 10
+            top = start_y 
+            bottom = y_coord + 5
             
             if (bottom - top) > 40:
                 rect = pymupdf.Rect(0, top, right_side, bottom)
@@ -41,22 +46,34 @@ class TaskExtractor:
                 start_y = bottom - 5 
             
         return crops
-    
-    # NEW METHOD: Check if a crop area has letter subtasks
+
+    def _is_roman_only(self, text):
+        """Return True if the string consists entirely of roman numeral chars (i, v, x)."""
+        return bool(text) and all(c in self._roman_only_chars for c in text.lower())
+
     def has_letter_subtasks(self, page, crop_rect):
-        """Check if this crop area contains letter subtasks like (a), (b), (c)"""
+        """Check if this crop area contains letter subtasks like (a), (b), (c).
+        
+        Crucially, this returns False for roman numeral markers like (i) or (v)
+        which would otherwise match the single-lowercase-letter pattern.
+        """
         words = page.get_text("words")
         
         for w in words:
             match = re.search(self.letter_pattern, w[4])
             if match:
+                letter = match.group(1).lower()
+                # Skip if the matched single letter is purely a roman numeral character.
+                # e.g. (i) or (v) should not be counted as a letter subtask.
+                if self._is_roman_only(letter):
+                    continue
                 word_rect = pymupdf.Rect(w[0], w[1], w[2], w[3])
                 if crop_rect.contains(word_rect) or crop_rect.intersects(word_rect):
                     return True
         return False
     
     def find_roman_numeral_coordinates(self, page, crop_rect):
-        """Find (i), (ii), (iii) etc. within a specific crop area"""
+        """Find (i), (ii), (iii) etc. within a specific crop area."""
         coords = []
         words = page.get_text("words")
         
@@ -71,11 +88,12 @@ class TaskExtractor:
         return sorted(coords, key=lambda x: x[1])
     
     def calculate_roman_crop_areas(self, roman_coords, parent_crop, page):
-        """Calculate crop areas for roman numeral sub-questions
+        """Calculate crop areas for roman numeral sub-questions.
         
-        Each crop should:
-        - Start from parent top (for first) or from just before its marker (for others)
-        - End just before the next marker starts (or parent end for last)
+        Each crop:
+        - First: starts at parent_crop.y0, ends just before the next marker
+        - Middle: starts just before its marker, ends just before the next
+        - Last: starts just before its marker, ends at parent_crop.y1
         """
         crops = []
         right_side = parent_crop.x1 + 5
