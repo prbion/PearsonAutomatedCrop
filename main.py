@@ -1,5 +1,6 @@
 # main.py
 import pymupdf
+import os
 import string 
 import pytesseract 
 from PIL import Image
@@ -9,24 +10,24 @@ from TaskExtractor import TaskExtractor
 from ImageSnipper import ImageSnipper
 from Menu import Menu 
 from TaskPipeline import TaskPipeline
+from ExcelExporter import ExcelExporter
 
 def main():
-    # 1. Setup
-    menu = Menu()
-    
-    # 2. Initialize tools
+    menu      = Menu()
     pdf_manager = PDFManager()
-    extractor = TaskExtractor()
-    snipper = ImageSnipper()
-    
-    # 3. Create the coordinator (The Processor)
-    processor = TaskPipeline(pdf_manager, extractor, snipper)
+    extractor   = TaskExtractor()
+    snipper     = ImageSnipper()
+    exporter    = ExcelExporter()                
 
-    # 4. Execute
-    pdf_path = r"C:\Dev\src\9FM0_02_que_20190607.pdf"
-    
-    # CHANGE: Pass the whole 'menu' object, not just the prefix string
+    processor = TaskPipeline(pdf_manager, extractor, snipper, exporter)  
+
+    pdf_path = r"C:\Dev\src\9fm0-02-que-20230606.pdf"  # update as needed
     processor.run(pdf_path, menu)
+
+    # Save Excel file next to the output folder
+    excel_filename = f"{menu.folder_name}_questions.xlsx"
+    excel_path     = os.path.join(menu.folder_name, excel_filename)
+    exporter.save(excel_path)                    
 
 if __name__ == "__main__":
     main()
